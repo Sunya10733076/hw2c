@@ -1,0 +1,112 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Define a structure to represent the customer
+typedef struct {
+    int customer_number;
+    int cashier_number;
+} Customer;
+
+// Define a queue structure
+#define MAX_SIZE 100
+typedef struct {
+    int front, rear, size;
+    Customer* customers[MAX_SIZE];
+} Queue;
+
+// Function to create a new customer
+Customer* createCustomer(int customer_number, int cashier_number) {
+    Customer* new_customer = (Customer*)malloc(sizeof(Customer));
+    new_customer->customer_number = customer_number;
+    new_customer->cashier_number = cashier_number;
+    return new_customer;
+}
+
+// Function to initialize a queue
+Queue* createQueue() {
+    Queue* queue = (Queue*)malloc(sizeof(Queue));
+    queue->front = queue->size = 0;
+    queue->rear = MAX_SIZE - 1;
+    return queue;
+}
+
+// Function to check if the queue is empty
+int isEmpty(Queue* queue) {
+    return (queue->size == 0);
+}
+
+// Function to check if the queue is full
+int isFull(Queue* queue) {
+    return (queue->size == MAX_SIZE);
+}
+
+// Function to enqueue a customer
+void enqueue(Queue* queue, Customer* customer) {
+    if (isFull(queue))
+        return;
+    queue->rear = (queue->rear + 1) % MAX_SIZE;
+    queue->customers[queue->rear] = customer;
+    queue->size += 1;
+}
+
+// Function to dequeue a customer
+Customer* dequeue(Queue* queue) {
+    if (isEmpty(queue))
+        return NULL;
+    Customer* customer = queue->customers[queue->front];
+    queue->front = (queue->front + 1) % MAX_SIZE;
+    queue->size -= 1;
+    return customer;
+}
+
+// Simulate checkout queue
+void simulateCheckoutQueue(int num_cashiers, int cashier_times[], int num_customers) {
+    Queue* checkout_queues[num_cashiers];
+    int current_customer = 1;
+
+    // Initialize checkout queues
+    for (int i = 0; i < num_cashiers; ++i) {
+        checkout_queues[i] = createQueue();
+    }
+
+    // Simulate checkout process
+    while (current_customer <= num_customers || !isEmpty(checkout_queues[0]) || !isEmpty(checkout_queues[1])) {
+        for (int i = 0; i < num_cashiers; ++i) {
+            if (!isEmpty(checkout_queues[i])) {
+                Customer* current = dequeue(checkout_queues[i]);
+                printf("Cashier %d is checking out Customer %d\n", current->cashier_number, current->customer_number);
+                cashier_times[i]--;
+                if (cashier_times[i] == 0) {
+                    printf("Cashier %d has finished checking out for Customer %d\n", current->cashier_number, current->customer_number);
+                } else {
+                    enqueue(checkout_queues[i], current);
+                }
+            }
+            
+            if (current_customer <= num_customers) {
+                Customer* new_customer = createCustomer(current_customer, i + 1);
+                enqueue(checkout_queues[i], new_customer);
+                current_customer++;
+            }
+        }
+    }
+}
+
+int main() {
+    int num_cashiers, num_customers;
+    printf("Enter the number of cashiers: ");
+    scanf("%d", &num_cashiers);
+
+    int cashier_times[num_cashiers];
+    printf("Enter the time taken by each cashier: ");
+    for (int i = 0; i < num_cashiers; ++i) {
+        scanf("%d", &cashier_times[i]);
+    }
+
+    printf("Enter the number of customers: ");
+    scanf("%d", &num_customers);
+
+    simulateCheckoutQueue(num_cashiers, cashier_times, num_customers);
+
+    return 0;
+}
